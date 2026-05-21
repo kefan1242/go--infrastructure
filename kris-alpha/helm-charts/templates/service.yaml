@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kris-alpha.fullname" . }}
+  labels:
+    {{- include "kris-alpha.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  {{- with .Values.service.clusterIP }}
+  clusterIP: {{ . | quote }}
+  {{- end }}
+  ports:
+    - name: grpc
+      port: {{ .Values.ports.grpc }}
+      targetPort: grpc
+      protocol: TCP
+    - name: http
+      port: {{ .Values.ports.http }}
+      targetPort: http
+      protocol: TCP
+    - name: sidecar
+      port: {{ .Values.ports.sidecar }}
+      targetPort: sidecar
+      protocol: TCP
+  selector:
+    {{- include "kris-alpha.selectorLabels" . | nindent 4 }}

@@ -1,0 +1,89 @@
+# Local dev dependencies in one stack.
+#
+# Lifecycle:
+#   make dev-deps-up      # docker compose up
+#   make dev-deps-down    # stop (keep volumes)
+#   make dev-deps-clean   # stop and drop volumes
+#
+# Exposed ports match the sample configs/config.yaml; service yaml stays as-is.
+# Persistent volumes live under ./.dev-data/ (.gitignored).
+
+name: kris-dev
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: kris-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: kris
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - ./.dev-data/mysql:/var/lib/mysql
+      - ./scripts/dev/mysql-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: kris-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - ./.dev-data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:7
+    container_name: kris-mongo
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - ./.dev-data/mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: kris-prometheus
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./scripts/dev/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./.dev-data/prometheus:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: kris-grafana
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    volumes:
+      - ./.dev-data/grafana:/var/lib/grafana
+      - ./scripts/dev/grafana-datasources.yml:/etc/grafana/provisioning/datasources/ds.yml:ro
+    depends_on:
+      - prometheus

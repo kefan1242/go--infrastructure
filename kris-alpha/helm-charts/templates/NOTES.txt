@@ -1,0 +1,11 @@
+{{ include "kris-alpha.fullname" . }} deployed.
+
+Check status:
+  kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+Port-forward and probe:
+  kubectl port-forward svc/{{ include "kris-alpha.fullname" . }} \
+    {{ .Values.ports.sidecar }}:{{ .Values.ports.sidecar }}
+  curl localhost:{{ .Values.ports.sidecar }}/healthz
+  curl localhost:{{ .Values.ports.sidecar }}/version
+  curl localhost:{{ .Values.ports.sidecar }}/metrics

@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: kris/alpha
+  pullPolicy: IfNotPresent
+  tag: ""        # falls back to .Chart.AppVersion
+
+imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+  prometheus.io/port: "8081"
+
+ports:
+  grpc: 50051
+  http: 8080
+  sidecar: 8081
+
+# Container args. Override per-environment.
+args:
+  - "-grpc=:50051"
+  - "-http=:8080"
+  - "-other=:8081"
+
+env: []
+  # - name: LOG_LEVEL
+  #   value: info
+
+# Env from a Secret / ConfigMap. Examples:
+envFrom: []
+  # - secretRef:
+  #     name: kris-alpha-secrets
+  # - configMapRef:
+  #     name: kris-alpha-config
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Probes hit the sidecar listener; never gated by auth/ratelimit.
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: sidecar
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: sidecar
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+service:
+  type: ClusterIP
+  # ClusterIP "None" makes the gRPC port DNS-headless for client-side LB.
+  clusterIP: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

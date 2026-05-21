@@ -1,0 +1,32 @@
+# Local Prometheus scrape config.
+#
+# Targets the sidecar HTTP ports of each kris-* service.
+# (host.docker.internal resolves to the docker host on macOS/Windows.)
+# Update the targets / labels as you add services.
+
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: kris
+    static_configs:
+      - targets:
+          - host.docker.internal:8081  # kris-alpha sidecar
+          - host.docker.internal:8083  # kris-beta  sidecar
+          - host.docker.internal:8085  # kris-gamma sidecar
+        labels:
+          env: dev
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: '.+:(8081)'
+        target_label: service
+        replacement: kris-alpha
+      - source_labels: [__address__]
+        regex: '.+:(8083)'
+        target_label: service
+        replacement: kris-beta
+      - source_labels: [__address__]
+        regex: '.+:(8085)'
+        target_label: service
+        replacement: kris-gamma

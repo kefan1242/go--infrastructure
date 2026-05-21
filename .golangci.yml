@@ -1,0 +1,47 @@
+# go-infrastructure golangci-lint config
+# Shared rules; CI enforces, local trigger via `make lint`.
+run:
+  timeout: 5m
+  go: "1.25"
+  tests: true
+
+linters:
+  disable-all: true
+  enable:
+    # correctness
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - typecheck
+    # style / consistency
+    - gofumpt
+    - goimports
+    - misspell
+    # easy wins
+    - gosimple
+    - unconvert
+    - unparam
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/kris/go-infrastructure
+  gofumpt:
+    extra-rules: true
+
+issues:
+  exclude-rules:
+    # generated code: skip
+    - path: \.pb\.go$
+      linters: [all]
+    - path: wire_gen\.go$
+      linters: [all]
+    # vendored protos
+    - path: third_party/
+      linters: [all]
+    # allow occasional errcheck in tests
+    - path: _test\.go
+      linters: [errcheck]
+  max-issues-per-linter: 0
+  max-same-issues: 0

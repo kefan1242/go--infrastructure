@@ -1,0 +1,59 @@
+# ===== Go =====
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# build outputs (each service's `make build`)
+bin/
+dist/
+
+# vendored deps
+vendor/
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== Env & secrets =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# ===== Generated proto code (regenerated locally; not committed) =====
+*.pb.go
+*_grpc.pb.go
+
+# ===== Runtime data =====
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Temp =====
+tmp/
+.tmp/
+
+# ===== Local dev deps volumes (docker-compose.dev.yml) =====
+.dev-data/
+
+# ===== Air hot-reload =====
+.air.toml
