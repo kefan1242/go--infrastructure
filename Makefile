@@ -66,6 +66,51 @@ cover-gate:
 bench:
 	@$(MAKE) -C pkg bench
 
+DEMO_DIR := .demo
+# Demo ports (override if these collide: make demo DEMO_ALPHA_GRPC=...)
+DEMO_ALPHA_GRPC  ?= 28051
+DEMO_ALPHA_HTTP  ?= 28080
+DEMO_ALPHA_OTHER ?= 28081
+DEMO_BETA_HTTP   ?= 28082
+DEMO_BETA_OTHER  ?= 28083
+DEMO_GAMMA_GRPC  ?= 28053
+DEMO_GAMMA_OTHER ?= 28085
+
+.PHONY: demo
+# boot kris-alpha + kris-beta + kris-gamma in background; print curl commands.
+# Default ports are in the 28xxx range to avoid common collisions.
+demo: build-all
+	@mkdir -p $(DEMO_DIR)
+	@./kris-alpha/bin/alpha -grpc=:$(DEMO_ALPHA_GRPC) -http=:$(DEMO_ALPHA_HTTP) -other=:$(DEMO_ALPHA_OTHER) >$(DEMO_DIR)/alpha.log 2>&1 & echo $$! > $(DEMO_DIR)/alpha.pid
+	@./kris-beta/bin/beta  -http=:$(DEMO_BETA_HTTP) -other=:$(DEMO_BETA_OTHER) >$(DEMO_DIR)/beta.log  2>&1 & echo $$! > $(DEMO_DIR)/beta.pid
+	@./kris-gamma/bin/gamma -grpc=:$(DEMO_GAMMA_GRPC) -other=:$(DEMO_GAMMA_OTHER) -upstream=127.0.0.1:$(DEMO_ALPHA_GRPC) >$(DEMO_DIR)/gamma.log 2>&1 & echo $$! > $(DEMO_DIR)/gamma.pid
+	@sleep 1
+	@echo ""
+	@echo "Booted. Logs under $(DEMO_DIR)/*.log; PIDs in $(DEMO_DIR)/*.pid."
+	@echo ""
+	@echo "Try:"
+	@echo "  curl localhost:$(DEMO_ALPHA_HTTP)/                                              # alpha biz"
+	@echo "  curl localhost:$(DEMO_ALPHA_OTHER)/version                                       # alpha sidecar"
+	@echo "  curl localhost:$(DEMO_BETA_HTTP)/                                              # beta public"
+	@echo "  curl -H 'Authorization: Bearer demo-alice' localhost:$(DEMO_BETA_HTTP)/whoami   # beta authed"
+	@echo "  curl -X OPTIONS -H 'Origin: https://x' -H 'Access-Control-Request-Method: GET' \\"
+	@echo "       -i localhost:$(DEMO_BETA_HTTP)/                                            # beta CORS preflight"
+	@echo "  curl localhost:$(DEMO_GAMMA_OTHER)/readyz                                       # gamma probe"
+	@echo ""
+	@echo "Stop:  make demo-stop"
+
+.PHONY: demo-stop
+# kill the demo processes; tolerate missing pid files
+demo-stop:
+	@for svc in alpha beta gamma; do \
+	  if [ -f $(DEMO_DIR)/$$svc.pid ]; then \
+	    pid=$$(cat $(DEMO_DIR)/$$svc.pid); \
+	    kill $$pid 2>/dev/null || true; \
+	    rm $(DEMO_DIR)/$$svc.pid; \
+	    echo "stopped $$svc ($$pid)"; \
+	  fi; \
+	done
+
 .PHONY: ci-local
 # mirror the GitHub CI matrix locally before pushing: build + vet + test + lint + fmt-check
 ci-local:
