@@ -1,5 +1,9 @@
 # go-infrastructure
 
+[![ci](https://github.com/kefan1242/go--infrastructure/actions/workflows/ci.yml/badge.svg)](https://github.com/kefan1242/go--infrastructure/actions/workflows/ci.yml)
+[![go version](https://img.shields.io/badge/go-1.25%2B-00ADD8?logo=go)](go.work)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Reusable Go service scaffolding. The `pkg` module bundles the kratos-based
 gRPC + HTTP server, observability, data-store factories, config loader and
 test helpers; the `kris-*` modules are minimal example services that show

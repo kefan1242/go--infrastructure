@@ -35,8 +35,17 @@ jobs:
           go vet ./kris-beta/...
           go vet ./kris-gamma/...
 
-      - name: Test
-        run: go test -race -count=1 ./pkg/...
+      - name: Test + coverage
+        run: |
+          go test -race -count=1 -coverprofile=coverage.out ./pkg/...
+          go tool cover -func=coverage.out | tail -1
+
+      - name: Upload coverage artifact
+        if: matrix.go == '1.25.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
 
   lint:
     runs-on: ubuntu-latest
@@ -49,5 +58,43 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.61.0
-          args: ./pkg/... ./kris-alpha/... ./kris-beta/... ./kris-gamma/...
+          version: v1.62.2
+          args: --build-tags=integration ./pkg/... ./kris-alpha/... ./kris-beta/... ./kris-gamma/...
+
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+      mongo:
+        image: mongo:7
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd="mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache: true
+      - name: Run pkg/data integration tests
+        run: go test -tags integration -race -count=1 ./pkg/data/...

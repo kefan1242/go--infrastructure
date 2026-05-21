@@ -77,10 +77,14 @@ lint:
 	golangci-lint run ./pkg/... ./kris-*/...
 
 .PHONY: fmt
-# gofumpt + goimports across the whole repo
+# gofumpt -extra + goimports across the whole repo (matches .golangci.yml rules)
 fmt:
-	gofumpt -w pkg/ kris-*/
+	gofumpt -extra -w pkg/ kris-*/
 	goimports -w -local github.com/kris/go-infrastructure pkg/ kris-*/
+
+.PHONY: lint-fix
+# alias for fmt — auto-fix what golangci-lint would flag (gofumpt + goimports)
+lint-fix: fmt
 
 .PHONY: vet
 # go vet across every module

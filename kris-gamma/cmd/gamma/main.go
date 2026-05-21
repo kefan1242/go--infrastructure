@@ -11,6 +11,7 @@ import (
 
 	pkgclient "github.com/kris/go-infrastructure/pkg/client"
 	pkglog "github.com/kris/go-infrastructure/pkg/log"
+	"github.com/kris/go-infrastructure/pkg/middleware/timeout"
 	pkgserver "github.com/kris/go-infrastructure/pkg/runtime/server"
 	"github.com/kris/go-infrastructure/pkg/version"
 
@@ -70,10 +71,12 @@ func main() {
 		})
 	}
 
+	// Demonstrate pkg/middleware/timeout: every inbound RPC has a 2s budget.
 	gs := pkgserver.NewGRPCServer(
 		pkgserver.GRPCConfig{Network: "tcp", Addr: grpcAddr},
 		logger,
 		nil,
+		timeout.Server(timeout.WithTimeout(2*time.Second)),
 	)
 	oh := pkgserver.NewOtherHTTPServer(
 		pkgserver.HTTPConfig{Network: "tcp", Addr: otherAddr},

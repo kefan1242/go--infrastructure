@@ -26,8 +26,10 @@ Do not amend pushed commits. New commits, always.
 
 ## Code style
 
-- `make fmt` (gofumpt + goimports with the local-prefix set in `.golangci.yml`).
-- `make lint` (golangci-lint with the shared config). Both run in CI.
+- `make fmt` (gofumpt -extra + goimports with the local-prefix from `.golangci.yml`).
+- `make lint-fix` is an alias for `make fmt` — clears most golangci-lint findings.
+- `make lint` runs golangci-lint with the shared config. Both `lint` and the
+  underlying formatters run in CI.
 - Keep `pkg/` business-agnostic. If a change to `pkg/` is motivated by one
   service's needs, justify in the PR body why it generalizes.
 
