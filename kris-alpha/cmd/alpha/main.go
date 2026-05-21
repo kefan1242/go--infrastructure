@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/log"
-	khttp "github.com/go-kratos/kratos/v2/transport/http"
 	_ "go.uber.org/automaxprocs"
 )
 
@@ -64,7 +63,9 @@ func newApp(logger log.Logger, id string) (*kratos.App, func()) {
 	hs := pkgserver.NewBizHTTPServer(
 		pkgserver.HTTPConfig{Network: "tcp", Addr: httpAddr},
 		logger,
-		func(s *khttp.Server) {
+		func(s *pkgserver.BizHTTPServer) {
+			// Use s.HandleFunc (not s.S.HandleFunc) so the default chain wraps
+			// this handler — otherwise raw HandleFunc bypasses kratos middleware.
 			s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				_, _ = w.Write([]byte("kris-alpha ok"))
 			})

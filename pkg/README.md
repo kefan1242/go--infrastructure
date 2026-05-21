@@ -21,6 +21,7 @@ Module path: `github.com/kris/go-infrastructure/pkg`
 | `middleware/logid`  | trace_id propagation header / metadata + OTel SpanContext bridge         |
 | `middleware/metric` | RED metrics into pkg/metric                                              |
 | `middleware/ratelimit` | in-process token-bucket rate limiter, per-key                         |
+| `middleware/timeout` | per-request deadline with kratos `GatewayTimeout` on overrun              |
 | `runtime/server`    | gRPC + business HTTP + sidecar HTTP (`/healthz`, `/readyz`, `/metrics`, pprof) |
 | `testutil`          | memory logger + fake transport for middleware tests                      |
 | `trace`             | OpenTelemetry tracer-provider initialization                             |

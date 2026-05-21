@@ -71,7 +71,7 @@ func main() {
 			Filters: []khttp.FilterFunc{corsFilter},
 		},
 		logger,
-		func(s *khttp.Server) {
+		func(s *pkgserver.BizHTTPServer) {
 			s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 				_, _ = w.Write([]byte("kris-beta public ok"))
 			})

@@ -59,3 +59,29 @@ func TestFromContext_EmptyWhenAbsent(t *testing.T) {
 		t.Errorf("expected empty, got %s", got)
 	}
 }
+
+func TestClient_WritesHeaderWhenIDPresent(t *testing.T) {
+	ft := testutil.NewFakeTransport()
+	ctx := testutil.InjectClientContext(logid.NewContext(context.Background(), "trace-xyz"), ft)
+
+	handler := func(context.Context, any) (any, error) { return nil, nil }
+	if _, err := logid.Client()(handler)(ctx, nil); err != nil {
+		t.Fatalf("client: %v", err)
+	}
+	if got := ft.RequestHeader().Get(logid.MetadataKey); got != "trace-xyz" {
+		t.Errorf("outbound header: want trace-xyz, got %q", got)
+	}
+}
+
+func TestClient_NoHeaderWhenIDMissing(t *testing.T) {
+	ft := testutil.NewFakeTransport()
+	ctx := testutil.InjectClientContext(context.Background(), ft)
+
+	handler := func(context.Context, any) (any, error) { return nil, nil }
+	if _, err := logid.Client()(handler)(ctx, nil); err != nil {
+		t.Fatalf("client: %v", err)
+	}
+	if got := ft.RequestHeader().Get(logid.MetadataKey); got != "" {
+		t.Errorf("outbound header should be empty when ctx has no id, got %q", got)
+	}
+}
