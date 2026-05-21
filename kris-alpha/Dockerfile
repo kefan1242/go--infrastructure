@@ -15,7 +15,7 @@
 # nonroot. Static binary because CGO is off; mongo/redis/mysql drivers are
 # pure Go.
 
-FROM golang:1.25-bookworm AS builder
+FROM golang:1.26-bookworm AS builder
 
 WORKDIR /src
 COPY . .
