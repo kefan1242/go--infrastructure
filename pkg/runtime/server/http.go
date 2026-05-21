@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"time"
 
@@ -14,11 +15,15 @@ import (
 //
 // Filters run before any handler — use them for raw-HTTP concerns like
 // CORS, body-size limits, request id at the edge.
+//
+// TLSConfig, if non-nil, enables HTTPS on this listener. Use TLSFromFiles
+// to load cert + key (and optionally a client CA bundle for mTLS).
 type HTTPConfig struct {
-	Network string
-	Addr    string
-	Timeout time.Duration
-	Filters []khttp.FilterFunc
+	Network   string
+	Addr      string
+	Timeout   time.Duration
+	Filters   []khttp.FilterFunc
+	TLSConfig *tls.Config
 }
 
 // HTTPRegistrar is the callback through which the caller registers HTTP handlers.
@@ -79,6 +84,9 @@ func baseHTTPOpts(cfg HTTPConfig) []khttp.ServerOption {
 	}
 	if len(cfg.Filters) > 0 {
 		opts = append(opts, khttp.Filter(cfg.Filters...))
+	}
+	if cfg.TLSConfig != nil {
+		opts = append(opts, khttp.TLSConfig(cfg.TLSConfig))
 	}
 	return opts
 }

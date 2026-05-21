@@ -7,6 +7,17 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- **TLS support** in `pkg/runtime/server`. `HTTPConfig.TLSConfig` and
+  `GRPCConfig.TLSConfig` accept `*tls.Config`. `TLSFromFiles(cert, key,
+  clientCAFile)` loads cert+key, with optional client-CA bundle to enable
+  mTLS (sets `ClientAuth=RequireAndVerifyClientCert`). `MinVersion` pinned
+  to TLS 1.2. Tested with self-signed cert end-to-end.
+- **Graceful-shutdown drain delay** via `server.NewDrainer(delay)`. On
+  SIGTERM kratos invokes `drainer.BeforeStop`, which flips
+  `drainer.Draining() = true` (so the wired readiness Pinger fails /readyz)
+  then sleeps for the configured grace before letting the servers stop.
+  Eliminates the SIGTERM-to-kube-proxy-sync gap that drops connections
+  during k8s rolling deploys. kris-alpha wires it via `-drain-grace=10s`.
 - `make demo` / `make demo-stop` boot all three kris-* services with
   non-colliding default ports (28xxx) and print a curl cheat-sheet.
 - `BenchmarkDefaultChain_PassesThroughNoopHandler` pins per-request

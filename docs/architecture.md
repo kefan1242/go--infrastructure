@@ -88,6 +88,20 @@ listed bullets above, prefer extending `pkg` instead.
 - **DI container.** Each service runs its own `wire` setup. `pkg/runtime/server`
   intentionally exports plain constructors so any DI tool works.
 
+## Production readiness
+
+- **TLS / mTLS** — `pkg/runtime/server.TLSFromFiles(cert, key, clientCA)` loads
+  a `*tls.Config` you set on `HTTPConfig.TLSConfig` / `GRPCConfig.TLSConfig`.
+  Pass `clientCA=""` for server-only TLS; non-empty path enables mTLS with
+  `RequireAndVerifyClientCert`. Server `MinVersion` is pinned to TLS 1.2.
+
+- **Graceful shutdown** — `server.NewDrainer(delay)` solves the SIGTERM-to-LB-
+  deregistration race. Wire its `.BeforeStop` into `kratos.BeforeStop(...)` and
+  its `.ReadinessPinger()` into the sidecar `/readyz` probes. On SIGTERM:
+  /readyz starts returning 503 (LB drops the pod), kratos sleeps for `delay`
+  while in-flight requests finish, then closes the listeners. kris-alpha
+  uses `-drain-grace=10s` by default.
+
 ## Trade-offs we deliberately accepted
 
 - **Single in-process rate limiter.** Each replica enforces its own quota.

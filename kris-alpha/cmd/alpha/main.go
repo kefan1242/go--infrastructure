@@ -7,6 +7,7 @@ import (
 	"flag"
 	"net/http"
 	"os"
+	"time"
 
 	pkglog "github.com/kris/go-infrastructure/pkg/log"
 	pkgserver "github.com/kris/go-infrastructure/pkg/runtime/server"
@@ -27,15 +28,17 @@ var (
 	Commit    = ""
 	BuildTime = ""
 
-	grpcAddr  string
-	httpAddr  string
-	otherAddr string
+	grpcAddr   string
+	httpAddr   string
+	otherAddr  string
+	drainGrace time.Duration
 )
 
 func init() {
 	flag.StringVar(&grpcAddr, "grpc", ":50051", "gRPC listen address")
 	flag.StringVar(&httpAddr, "http", ":8080", "business HTTP listen address")
 	flag.StringVar(&otherAddr, "other", ":8081", "sidecar HTTP listen address (healthz/metrics/pprof)")
+	flag.DurationVar(&drainGrace, "drain-grace", 10*time.Second, "graceful-shutdown grace period: how long to fail /readyz before stopping")
 }
 
 func main() {
@@ -72,10 +75,17 @@ func newApp(logger log.Logger, id string) (*kratos.App, func()) {
 		},
 	)
 
+	// Drainer flips /readyz to fail on SIGTERM, then sleeps drainGrace before
+	// kratos stops the servers — gives the load balancer time to drop the pod.
+	drainer := pkgserver.NewDrainer(drainGrace)
+	probes := &pkgserver.ReadinessProbes{
+		All: []pkgserver.Pinger{drainer.ReadinessPinger()},
+	}
+
 	oh := pkgserver.NewOtherHTTPServer(
 		pkgserver.HTTPConfig{Network: "tcp", Addr: otherAddr},
 		logger,
-		nil, // no readiness probes wired in this example
+		probes,
 	)
 	oh.S.HandleFunc("/version", version.Handler(version.Info{
 		Name:      Name,
@@ -90,6 +100,7 @@ func newApp(logger log.Logger, id string) (*kratos.App, func()) {
 		kratos.Version(Version),
 		kratos.Logger(logger),
 		kratos.Server(gs, hs.S, oh.S),
+		kratos.BeforeStop(drainer.BeforeStop),
 	)
 	return app, func() {}
 }

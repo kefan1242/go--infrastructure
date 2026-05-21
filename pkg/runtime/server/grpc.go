@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/tls"
 	"time"
 
 	"github.com/kris/go-infrastructure/pkg/middleware/access"
@@ -15,10 +16,14 @@ import (
 )
 
 // GRPCConfig is the cross-service gRPC server configuration.
+//
+// TLSConfig, if non-nil, enables gRPC-over-TLS. Use TLSFromFiles to load
+// cert + key (and optionally a client CA bundle for mTLS).
 type GRPCConfig struct {
-	Network string
-	Addr    string
-	Timeout time.Duration
+	Network   string
+	Addr      string
+	Timeout   time.Duration
+	TLSConfig *tls.Config
 }
 
 // GRPCRegistrar is the callback through which the caller registers their
@@ -42,6 +47,9 @@ func NewGRPCServer(cfg GRPCConfig, logger log.Logger, register GRPCRegistrar, ex
 	}
 	if cfg.Timeout > 0 {
 		opts = append(opts, grpc.Timeout(cfg.Timeout))
+	}
+	if cfg.TLSConfig != nil {
+		opts = append(opts, grpc.TLSConfig(cfg.TLSConfig))
 	}
 	srv := grpc.NewServer(opts...)
 	if register != nil {
