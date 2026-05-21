@@ -57,6 +57,25 @@ func TestNewGRPC_HappyPath(t *testing.T) {
 	}
 }
 
+func TestNewGRPC_BreakerOptOut(t *testing.T) {
+	// Smoke: NoCircuitBreaker=true should still construct a usable conn.
+	lis := startAcceptingListener(t)
+	logger, _ := testutil.NewMemoryLogger()
+
+	conn, cleanup, err := pkgclient.New(pkgclient.Config{
+		Endpoint:         lis.Addr().String(),
+		DialTimeout:      2 * time.Second,
+		NoCircuitBreaker: true,
+	}, logger)
+	if err != nil {
+		t.Fatalf("New with NoCircuitBreaker: %v", err)
+	}
+	defer cleanup()
+	if conn == nil {
+		t.Fatal("conn nil")
+	}
+}
+
 func TestNewGRPC_RejectsEmptyEndpoint(t *testing.T) {
 	logger, _ := testutil.NewMemoryLogger()
 	_, _, err := pkgclient.New(pkgclient.Config{}, logger)

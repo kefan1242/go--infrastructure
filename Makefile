@@ -61,6 +61,17 @@ cover:
 cover-gate:
 	@$(MAKE) -C pkg cover-gate
 
+.PHONY: vuln-check
+# Go official vulnerability scan (call-graph aware) against every module.
+# Install once: go install golang.org/x/vuln/cmd/govulncheck@latest
+vuln-check:
+	@echo ">>> vuln-check pkg"
+	@cd pkg && govulncheck ./...
+	@for s in $(SERVICES); do \
+	  echo ">>> vuln-check kris-$$s"; \
+	  (cd kris-$$s && govulncheck ./...) || exit 1; \
+	done
+
 .PHONY: bench
 # run benchmarks across pkg
 bench:

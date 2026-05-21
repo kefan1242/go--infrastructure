@@ -73,6 +73,27 @@ The `pkg/middleware/access` middleware emits one line per RPC with:
 
 Log level: Info on success, Warn on error.
 
+### Sensitive headers — redact before logging
+
+If you add per-request body / header logging beyond the default access middleware
+(which only emits `kind/op/code/latency_ms/trace_id`), route the headers
+through `pkglog.RedactHeaders` first:
+
+```go
+import pkglog "github.com/kris/go-infrastructure/pkg/log"
+
+masked := pkglog.RedactHeaders(r.Header, "X-Tenant-Token")
+helper.Infow("inbound", "headers", masked, "path", r.URL.Path)
+```
+
+The default mask list covers `Authorization`, `Proxy-Authorization`, `Cookie`,
+`Set-Cookie`, `X-Auth-Token`, `X-Api-Key`, `X-Csrf-Token`. Extend per call.
+`RedactValue(key, value)` is the single-pair variant.
+
+Compliance / privacy audits routinely catch credential leaks in log shippers
+— even one missed log line with `Authorization: Bearer eyJ...` triggers an
+incident. Wire the helper as soon as you add custom request logging.
+
 ### Adding fields
 
 To add a structured field, wrap the kratos logger with `log.With(...)`:

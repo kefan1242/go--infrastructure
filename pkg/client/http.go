@@ -8,6 +8,8 @@ import (
 	"github.com/kris/go-infrastructure/pkg/middleware/logid"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/circuitbreaker"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
@@ -21,6 +23,10 @@ type HTTPConfig struct {
 	Endpoint    string        // base URL or "host:port" (kratos discovery URIs also work)
 	Timeout     time.Duration // per-request default timeout (0 = unset)
 	DialTimeout time.Duration // construct-time timeout; default 5s
+	// NoCircuitBreaker disables the default per-operation SRE breaker. Leave
+	// false unless the caller has its own retry layer that the breaker would
+	// pre-empt.
+	NoCircuitBreaker bool
 }
 
 // NewHTTP returns a kratos HTTP client plus a cleanup function. It wires the
@@ -39,13 +45,17 @@ func NewHTTP(cfg HTTPConfig, logger log.Logger, extra ...khttp.ClientOption) (*k
 	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
+	mws := []middleware.Middleware{
+		recovery.Recovery(),
+		tracing.Client(),
+		logid.Client(),
+	}
+	if !cfg.NoCircuitBreaker {
+		mws = append(mws, circuitbreaker.Client())
+	}
 	opts := []khttp.ClientOption{
 		khttp.WithEndpoint(cfg.Endpoint),
-		khttp.WithMiddleware(
-			recovery.Recovery(),
-			tracing.Client(),
-			logid.Client(),
-		),
+		khttp.WithMiddleware(mws...),
 	}
 	if cfg.Timeout > 0 {
 		opts = append(opts, khttp.WithTimeout(cfg.Timeout))

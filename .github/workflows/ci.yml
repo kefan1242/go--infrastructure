@@ -71,6 +71,25 @@ jobs:
       - name: fmt-check
         run: make fmt-check
 
+  vuln:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache: true
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: Scan pkg
+        run: cd pkg && govulncheck ./...
+      - name: Scan kris-alpha
+        run: cd kris-alpha && govulncheck ./...
+      - name: Scan kris-beta
+        run: cd kris-beta && govulncheck ./...
+      - name: Scan kris-gamma
+        run: cd kris-gamma && govulncheck ./...
+
   scaffold:
     runs-on: ubuntu-latest
     steps:

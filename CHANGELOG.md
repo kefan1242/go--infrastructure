@@ -7,6 +7,18 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- **Client circuit breaker** in `pkg/client.New` / `NewHTTP` default chains
+  (kratos `circuitbreaker.Client()` — Google SRE adaptive algorithm, per-op
+  bucket). Returns kratos `503 / CIRCUITBREAKER` when the breaker trips.
+  Opt out via `Config.NoCircuitBreaker` when caller wraps its own retry.
+- `pkg/log.RedactHeaders(h, extra...)` + `RedactValue(key, value)` — mask
+  sensitive HTTP headers before logging. Default list covers `Authorization`,
+  `Proxy-Authorization`, `Cookie`, `Set-Cookie`, `X-Auth-Token`,
+  `X-Api-Key`, `X-Csrf-Token`. Case-insensitive, canonical keys on output,
+  never mutates input. Tested + documented in observability.md.
+- `make vuln-check` + dedicated CI `vuln` job — runs Go official
+  `govulncheck` (call-graph aware) against every module. Fails on real CVE
+  matches in the actively-called surface.
 - `pkg/page` — generic `Param{PageNo, PageSize}` + `Result[T]{Total, Pages, List}`.
   `Param.Normalize / Offset / Limit` for SQL queries; `New / Empty / Map` for
   building responses. No ORM coupling — works above any data layer.

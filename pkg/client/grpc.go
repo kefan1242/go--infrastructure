@@ -1,10 +1,13 @@
 // Package client provides a reusable downstream gRPC client factory.
 //
-// Compared to a bare grpc.Dial, this adds three things:
-//  1. Default kratos client middlewares: recovery + tracing.Client + logid propagation.
+// Compared to a bare grpc.Dial, this adds four things:
+//  1. Default kratos client middlewares: recovery + tracing.Client + logid
+//     propagation + per-operation SRE circuit breaker.
 //  2. Insecure by default (intra-cluster plaintext); callers opt into TLS via DialOption.
 //  3. Fail-fast at startup: a bounded Dial so connectivity errors surface immediately
 //     rather than on the first RPC.
+//  4. Opt out of the breaker per-call via Config.NoCircuitBreaker when the
+//     caller has its own backoff/retry layer that the breaker would interfere with.
 package client
 
 import (
@@ -15,6 +18,8 @@ import (
 	"github.com/kris/go-infrastructure/pkg/middleware/logid"
 
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/go-kratos/kratos/v2/middleware"
+	"github.com/go-kratos/kratos/v2/middleware/circuitbreaker"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	kgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
@@ -26,6 +31,11 @@ type Config struct {
 	Endpoint    string        // host:port, e.g. "kris-alpha:50051"
 	Timeout     time.Duration // per-RPC default timeout (0 = unset)
 	DialTimeout time.Duration // dial timeout; default 5s
+	// NoCircuitBreaker disables the default per-operation SRE circuit breaker.
+	// Leave false unless your caller wraps this conn with its own retry/backoff
+	// layer that needs to see every failure (otherwise the breaker eats requests
+	// before retries can fire).
+	NoCircuitBreaker bool
 }
 
 // New dials a *grpc.ClientConn and returns a cleanup function. It injects the
@@ -49,13 +59,18 @@ func New(cfg Config, logger log.Logger, extra ...grpc.DialOption) (*grpc.ClientC
 	//   - tracing.Client opens a span (writes traceparent if trace.Init was called;
 	//     no-op otherwise — global is the noop provider until Init runs)
 	//   - logid.Client copies trace_id into x-trace-id; FromContext prefers OTel TraceID
+	//   - circuitbreaker (innermost) trips per-op when downstream errors spike (SRE algorithm).
+	mws := []middleware.Middleware{
+		recovery.Recovery(),
+		tracing.Client(),
+		logid.Client(),
+	}
+	if !cfg.NoCircuitBreaker {
+		mws = append(mws, circuitbreaker.Client())
+	}
 	opts := []kgrpc.ClientOption{
 		kgrpc.WithEndpoint(cfg.Endpoint),
-		kgrpc.WithMiddleware(
-			recovery.Recovery(),
-			tracing.Client(),
-			logid.Client(),
-		),
+		kgrpc.WithMiddleware(mws...),
 	}
 	if cfg.Timeout > 0 {
 		opts = append(opts, kgrpc.WithTimeout(cfg.Timeout))
