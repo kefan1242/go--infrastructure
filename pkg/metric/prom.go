@@ -19,6 +19,13 @@ var RequestLatencySeconds = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 	Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10},
 }, []string{"kind", "op"})
 
+// PanicsTotal counts recovered panics per operation. Wired by
+// pkg/middleware/recovery; alert on rate > 0.
+var PanicsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "kris_panics_total",
+	Help: "Inbound handler panics recovered by the middleware chain.",
+}, []string{"op"})
+
 func init() {
-	prometheus.MustRegister(RequestsTotal, RequestLatencySeconds)
+	prometheus.MustRegister(RequestsTotal, RequestLatencySeconds, PanicsTotal)
 }

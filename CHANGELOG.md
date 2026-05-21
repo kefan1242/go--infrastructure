@@ -7,6 +7,9 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- `pkg/middleware/recovery` wraps kratos's bare recovery to emit
+  `kris_panics_total{op}` and return a stable kratos InternalServer /
+  PANIC. Now the outer of the default chain.
 - `pkg/log.SlogHandler(logger)` — slog.Handler adapter so libraries that
   accept the stdlib `log/slog` API can route through the kratos pipeline.
   Maps slog DEBUG/INFO/WARN/ERROR to kratos levels; honors WithAttrs +

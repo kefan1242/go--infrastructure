@@ -94,6 +94,7 @@ registry; everything in `pkg/metric` is `MustRegister`'d at package init.
 |---------------------------------------|------------|-----------------------|--------------------------------------|
 | `kris_requests_total`                 | Counter    | `kind`, `op`, `code`  | `pkg/middleware/metric`              |
 | `kris_request_latency_seconds`        | Histogram  | `kind`, `op`          | `pkg/middleware/metric`              |
+| `kris_panics_total`                   | Counter    | `op`                  | `pkg/middleware/recovery`            |
 | `kris_db_pool_open_connections`       | Gauge      | `name`                | `pkg/metric.SQLCollector`            |
 | `kris_db_pool_in_use`                 | Gauge      | `name`                | "                                    |
 | `kris_db_pool_idle`                   | Gauge      | `name`                | "                                    |

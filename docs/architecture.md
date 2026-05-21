@@ -35,7 +35,7 @@ Order rationale, outermost first:
 
 | Position | Middleware       | Why here                                                                 |
 |---------:|------------------|--------------------------------------------------------------------------|
-| 1 (outer)| `recovery`       | panic must not escape — wrap everything else                             |
+| 1 (outer)| `recovery`       | panic must not escape — wraps with `kris_panics_total{op}` counter       |
 | 2        | `tracing.Server` | start span before `logid` so `logid.FromContext` can prefer OTel TraceID |
 | 3        | `logid.Server`   | inject custom trace_id when no OTel; mirror to reply header              |
 | 4        | `access.Server`  | structured access log with trace_id + final code                         |
