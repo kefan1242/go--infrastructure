@@ -27,6 +27,19 @@ build:
 	mkdir -p bin/
 	go build -ldflags "$(LDFLAGS)" -o ./bin/$(NAME) ./cmd/$(NAME)
 
+IMAGE_REPO ?= kris/$(NAME)
+IMAGE_TAG  ?= $(VERSION)
+
+.PHONY: docker
+# build the docker image; runs from the repo root so the pkg/ replace target is in context
+docker:
+	cd .. && docker build \
+	  -f kris-$(NAME)/Dockerfile \
+	  --build-arg VERSION=$(VERSION) \
+	  --build-arg COMMIT=$(COMMIT) \
+	  --build-arg BUILDTIME=$(BUILDTIME) \
+	  -t $(IMAGE_REPO):$(IMAGE_TAG) .
+
 .PHONY: run
 # build + run with default flags
 run: build

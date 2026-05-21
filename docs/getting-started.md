@@ -12,8 +12,9 @@ running service with logs, metrics, and traces in about five minutes.
 ## 1. Tools and local deps
 
 ```bash
-make tools-install   # pinned protoc-gen-* / wire / golangci-lint / etc.
-make dev-deps-up     # mysql + redis + mongo + prometheus + grafana
+make tools-install      # pinned protoc-gen-* / wire / golangci-lint / etc.
+make dev-deps-up        # mysql + redis + mongo + prometheus + grafana
+make test-integration   # pkg/data tests against the live local services
 ```
 
 The dev stack listens on:

@@ -46,6 +46,11 @@ test-all:
 	  $(MAKE) -C kris-$$s test || exit 1; \
 	done
 
+.PHONY: test-integration
+# run pkg/data integration tests against local mongo/redis/mysql
+test-integration:
+	@$(MAKE) -C pkg test-integration
+
 .PHONY: gen-all
 # proto + wire + tidy across all kris-* services
 gen-all:

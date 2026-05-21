@@ -27,6 +27,9 @@ curl localhost:8081/metrics
 
 ## Build with versioned identity
 
+`make build` already injects Name / Version / Commit / BuildTime via `-ldflags`.
+The raw command, for reference:
+
 ```bash
 go build \
   -ldflags "-X main.Name=kris-alpha \
@@ -34,4 +37,16 @@ go build \
             -X main.Commit=$(git rev-parse HEAD) \
             -X main.BuildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   -o ./bin/alpha ./cmd/alpha
+```
+
+## Docker
+
+Builds use `gcr.io/distroless/static-debian12:nonroot` for the runtime stage
+(static binary, no shell, runs as UID 65532). The build context is the **repo
+root** so the `replace github.com/kris/go-infrastructure/pkg => ../pkg` directive
+in `go.mod` resolves.
+
+```bash
+make docker                          # image: kris/alpha:<git-describe>
+make docker IMAGE_REPO=registry.example.com/team/kris-alpha IMAGE_TAG=v1.2.3
 ```

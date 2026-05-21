@@ -1,0 +1,46 @@
+# Keep the docker build context minimal.
+
+# VCS
+.git
+.gitignore
+
+# Local dev data (volumes mounted by docker-compose.dev.yml)
+.dev-data/
+
+# Build outputs
+**/bin/
+**/dist/
+**/tmp/
+**/.tmp/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+**/*.log
+**/logs/
+
+# Env / secrets
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/credentials.json
+
+# Generated proto code (regenerated inside builder if needed)
+**/*.pb.go
+**/*_grpc.pb.go
+
+# CI metadata not needed for the image
+.github/
+
+# Docs / config that don't affect build
+docs/
+scripts/dev/
+docker-compose.dev.yml
+README.md
+CONTRIBUTING.md
+LICENSE

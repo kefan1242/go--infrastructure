@@ -1,27 +1,51 @@
-# Multi-stage build template for a kris-* service.
+# syntax=docker/dockerfile:1
+#
+# kris-alpha image. Build from the **repository root**:
+#
+#   docker build -f kris-alpha/Dockerfile \
+#     --build-arg VERSION=$(git describe --tags --always) \
+#     --build-arg COMMIT=$(git rev-parse HEAD) \
+#     --build-arg BUILDTIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+#     -t kris/alpha:dev .
+#
+# The build context must include `pkg/` because kris-alpha's go.mod uses a
+# `replace github.com/kris/go-infrastructure/pkg => ../pkg` directive.
+#
+# Runtime base: distroless static — no shell, no package manager, runs as
+# nonroot. Static binary because CGO is off; mongo/redis/mysql drivers are
+# pure Go.
 
-FROM golang:1.25-bullseye AS builder
+FROM golang:1.25-bookworm AS builder
 
-COPY . /src
 WORKDIR /src
+COPY . .
 
-ENV GOPROXY=https://proxy.golang.org,direct
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILDTIME=unknown
 
-RUN GOPROXY=$GOPROXY go build -o ./bin/alpha ./cmd/alpha
+ENV CGO_ENABLED=0 \
+    GOOS=linux \
+    GOFLAGS=-trimpath
 
-FROM debian:bullseye-slim AS prod
+WORKDIR /src/kris-alpha
+RUN go build \
+      -ldflags "-s -w \
+                -X main.Name=kris-alpha \
+                -X main.Version=${VERSION} \
+                -X main.Commit=${COMMIT} \
+                -X main.BuildTime=${BUILDTIME}" \
+      -o /out/alpha ./cmd/alpha
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    netbase \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get autoremove -y && apt-get autoclean -y
+FROM gcr.io/distroless/static-debian12:nonroot AS prod
 
-COPY --from=builder /src/bin /app
+COPY --from=builder /out/alpha /app/alpha
 
+USER nonroot:nonroot
 WORKDIR /app
+
 EXPOSE 50051
 EXPOSE 8080
 EXPOSE 8081
 
-CMD ["./alpha"]
+ENTRYPOINT ["/app/alpha"]
