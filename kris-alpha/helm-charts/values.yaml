@@ -34,12 +34,14 @@ env: []
   # - name: LOG_LEVEL
   #   value: info
 
-# Env from a Secret / ConfigMap. Examples:
+# Env from a Secret / ConfigMap. Production credentials MUST come from here —
+# never from `env:` above (which ends up readable in `kubectl get pod -o yaml`).
+# See docs/secrets.md for the recommended external-secret-store integrations.
 envFrom: []
   # - secretRef:
-  #     name: kris-alpha-secrets
+  #     name: kris-alpha-credentials   # MYSQL_DSN, REDIS_PASSWORD, etc.
   # - configMapRef:
-  #     name: kris-alpha-config
+  #     name: kris-alpha-config        # non-sensitive runtime config
 
 resources:
   requests:

@@ -96,6 +96,11 @@ func baseHTTPOpts(cfg HTTPConfig) []khttp.ServerOption {
 // wrapper runs (kratos's server installs it via a router middleware), so
 // middlewares like logid.Server / access.Server / metric.Server see the
 // expected RequestHeader / ReplyHeader / Operation values.
+//
+// When a middleware in the chain returns an error (e.g. auth rejects the
+// request), the inner handler is never invoked; we surface the error to the
+// client via kratos's DefaultErrorEncoder so the response carries the proper
+// status code and JSON body instead of an empty 200.
 func wrapHandler(mws []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
 	if len(mws) == 0 {
 		return h
@@ -106,6 +111,8 @@ func wrapHandler(mws []middleware.Middleware, h http.HandlerFunc) http.HandlerFu
 			h(w, r.WithContext(ctx))
 			return nil, nil
 		})
-		_, _ = chained(kh)(r.Context(), r)
+		if _, err := chained(kh)(r.Context(), r); err != nil {
+			khttp.DefaultErrorEncoder(w, r, err)
+		}
 	}
 }

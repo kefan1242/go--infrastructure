@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kris/go-infrastructure/pkg/middleware/logid"
+	"github.com/kris/go-infrastructure/pkg/middleware/retry"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -14,6 +15,15 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	khttp "github.com/go-kratos/kratos/v2/transport/http"
 )
+
+// RetryConfig is an opt-in retry policy applied to the HTTP client.
+// **Only enable for idempotent calls** — the middleware does not enforce
+// idempotency. POST without a domain-level dedup key should never retry.
+type RetryConfig struct {
+	MaxAttempts    int
+	InitialBackoff time.Duration
+	MaxBackoff     time.Duration
+}
 
 // HTTPConfig is the dial configuration for a downstream HTTP service.
 //
@@ -27,6 +37,10 @@ type HTTPConfig struct {
 	// false unless the caller has its own retry layer that the breaker would
 	// pre-empt.
 	NoCircuitBreaker bool
+	// Retry, when non-zero MaxAttempts, installs the retry middleware
+	// BEFORE the circuit breaker (each retry counts against the breaker).
+	// Only set for idempotent endpoints.
+	Retry RetryConfig
 }
 
 // NewHTTP returns a kratos HTTP client plus a cleanup function. It wires the
@@ -49,6 +63,16 @@ func NewHTTP(cfg HTTPConfig, logger log.Logger, extra ...khttp.ClientOption) (*k
 		recovery.Recovery(),
 		tracing.Client(),
 		logid.Client(),
+	}
+	if cfg.Retry.MaxAttempts > 1 {
+		retryOpts := []retry.Option{retry.WithMaxAttempts(cfg.Retry.MaxAttempts)}
+		if cfg.Retry.InitialBackoff > 0 {
+			retryOpts = append(retryOpts, retry.WithInitialBackoff(cfg.Retry.InitialBackoff))
+		}
+		if cfg.Retry.MaxBackoff > 0 {
+			retryOpts = append(retryOpts, retry.WithMaxBackoff(cfg.Retry.MaxBackoff))
+		}
+		mws = append(mws, retry.Client(retryOpts...))
 	}
 	if !cfg.NoCircuitBreaker {
 		mws = append(mws, circuitbreaker.Client())

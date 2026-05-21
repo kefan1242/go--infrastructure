@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/kris/go-infrastructure/pkg/middleware/logid"
+	"github.com/kris/go-infrastructure/pkg/middleware/retry"
 
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
@@ -36,6 +37,10 @@ type Config struct {
 	// layer that needs to see every failure (otherwise the breaker eats requests
 	// before retries can fire).
 	NoCircuitBreaker bool
+	// Retry, when non-zero MaxAttempts, installs retry middleware BEFORE the
+	// circuit breaker. **Only enable for idempotent RPCs** — the middleware
+	// does not enforce idempotency.
+	Retry RetryConfig
 }
 
 // New dials a *grpc.ClientConn and returns a cleanup function. It injects the
@@ -64,6 +69,16 @@ func New(cfg Config, logger log.Logger, extra ...grpc.DialOption) (*grpc.ClientC
 		recovery.Recovery(),
 		tracing.Client(),
 		logid.Client(),
+	}
+	if cfg.Retry.MaxAttempts > 1 {
+		retryOpts := []retry.Option{retry.WithMaxAttempts(cfg.Retry.MaxAttempts)}
+		if cfg.Retry.InitialBackoff > 0 {
+			retryOpts = append(retryOpts, retry.WithInitialBackoff(cfg.Retry.InitialBackoff))
+		}
+		if cfg.Retry.MaxBackoff > 0 {
+			retryOpts = append(retryOpts, retry.WithMaxBackoff(cfg.Retry.MaxBackoff))
+		}
+		mws = append(mws, retry.Client(retryOpts...))
 	}
 	if !cfg.NoCircuitBreaker {
 		mws = append(mws, circuitbreaker.Client())

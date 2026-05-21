@@ -7,6 +7,27 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- **`pkg/middleware/retry`** — opt-in exponential-backoff + jitter retry
+  middleware. Default `RetryOn` covers net errors + kratos 503/504/429.
+  Wired into `pkg/client.Config.Retry` for both gRPC and HTTP — set
+  `MaxAttempts > 1` per call site. Idempotency caveats documented.
+- **`pkg/config.MustGetSecret(key)`** + `GetSecret` — fail-fast at boot
+  when required env vars are unset. Eliminates the silent-misconfig class
+  of bug where empty creds CrashLoopBackOff with confusing auth errors.
+- **`docs/secrets.md`** — the rule (secrets never in `.env`), how to wire
+  k8s Secret / Sealed Secrets / External Secrets / Vault, logging hygiene,
+  rotation. Helm chart `values.yaml` comments updated to point here.
+- **`.github/workflows/release.yml`** — fires on `v*` tag push. Buildx
+  multi-arch (amd64+arm64) build, pushes to ghcr.io with SBOM + provenance,
+  cosign keyless OIDC signing. Prints the verify command in the job log.
+- **golang-migrate integration** — `tools/install.sh` installs `migrate`
+  (v4.18.1); root Makefile gains `migrate-create/up/down/status`.
+  `kris-alpha/migrations/0001_init.{up,down}.sql` is the example.
+- **`scripts/smoke-test.sh` + CI `e2e` job** — boots all 3 kris-* via
+  `make demo`, asserts 11 endpoint outcomes (status + body / contains),
+  tears down. Catches integration regressions like the one fixed below.
+- **Dockerfiles for `kris-beta` + `kris-gamma`** — same distroless / static
+  pattern as alpha, with each service's own EXPOSE ports.
 - **Client circuit breaker** in `pkg/client.New` / `NewHTTP` default chains
   (kratos `circuitbreaker.Client()` — Google SRE adaptive algorithm, per-op
   bucket). Returns kratos `503 / CIRCUITBREAKER` when the breaker trips.
@@ -75,6 +96,13 @@ the repo uses semver once it cuts a `v0.1.0`.
 - Scaffolder smoke job in CI runs `scripts/new-service.sh` end-to-end.
 
 ### Fixed
+- `pkg/runtime/server.wrapHandler` now surfaces middleware errors via
+  kratos `DefaultErrorEncoder`. Previously when auth (or any chain
+  middleware) returned an error, the client got an empty `200 OK` instead
+  of the proper `401` / status — silent auth bypass on raw HandleFunc'd
+  routes. Caught by the new E2E smoke test.
+
+
 - `scripts/new-service.sh` portable-sed compatibility (BSD/macOS): drop
   `\b`, use explicit anchors so Dockerfile EXPOSE / Makefile `NAME :=` /
   helm `values.yaml` ports / `./alpha"` in CMD all rewrite cleanly.

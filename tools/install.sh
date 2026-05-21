@@ -25,6 +25,8 @@ GOIMPORTS_VERSION="latest"      # x/tools moves fast; not pinned
 GOLANGCI_LINT_VERSION="v1.61.0"
 MOCKGEN_VERSION="v0.6.0"
 BUF_VERSION="v1.47.2"
+GOLANG_MIGRATE_VERSION="v4.18.1"
+GOVULNCHECK_VERSION="latest"
 
 install_one() {
   local pkg=$1
@@ -47,6 +49,8 @@ install_one "golang.org/x/tools/cmd/goimports@${GOIMPORTS_VERSION}"
 install_one "github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 install_one "go.uber.org/mock/mockgen@${MOCKGEN_VERSION}"
 install_one "github.com/bufbuild/buf/cmd/buf@${BUF_VERSION}"
+install_one "github.com/golang-migrate/migrate/v4/cmd/migrate@${GOLANG_MIGRATE_VERSION}"
+install_one "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
 
 echo ""
 echo "==> Done. Tools installed at $(go env GOPATH)/bin"

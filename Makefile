@@ -61,6 +61,52 @@ cover:
 cover-gate:
 	@$(MAKE) -C pkg cover-gate
 
+# ---- DB migrations (golang-migrate) ----
+#
+# Usage:
+#   make migrate-create SVC=alpha NAME=add_users
+#   make migrate-up     SVC=alpha DB_URL='mysql://root:@tcp(127.0.0.1:3306)/kris'
+#   make migrate-down   SVC=alpha DB_URL=... STEPS=1
+#   make migrate-status SVC=alpha DB_URL=...
+#
+# Each service owns kris-<svc>/migrations/. Files are .sql, numbered by
+# golang-migrate convention (NNNN_name.up.sql + NNNN_name.down.sql).
+
+SVC      ?= alpha
+DB_URL   ?=
+STEPS    ?= 1
+NAME     ?=
+MIGR_DIR  = kris-$(SVC)/migrations
+
+.PHONY: migrate-create
+migrate-create:
+ifndef NAME
+	$(error usage: make migrate-create SVC=alpha NAME=add_users)
+endif
+	@mkdir -p $(MIGR_DIR)
+	migrate create -ext sql -dir $(MIGR_DIR) -seq $(NAME)
+
+.PHONY: migrate-up
+migrate-up:
+ifndef DB_URL
+	$(error usage: make migrate-up SVC=alpha DB_URL='mysql://...')
+endif
+	migrate -database "$(DB_URL)" -path $(MIGR_DIR) up
+
+.PHONY: migrate-down
+migrate-down:
+ifndef DB_URL
+	$(error usage: make migrate-down SVC=alpha DB_URL='mysql://...' STEPS=1)
+endif
+	migrate -database "$(DB_URL)" -path $(MIGR_DIR) down $(STEPS)
+
+.PHONY: migrate-status
+migrate-status:
+ifndef DB_URL
+	$(error usage: make migrate-status SVC=alpha DB_URL='mysql://...')
+endif
+	migrate -database "$(DB_URL)" -path $(MIGR_DIR) version
+
 .PHONY: vuln-check
 # Go official vulnerability scan (call-graph aware) against every module.
 # Install once: go install golang.org/x/vuln/cmd/govulncheck@latest
