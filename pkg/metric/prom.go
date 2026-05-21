@@ -3,9 +3,10 @@ package metric
 import "github.com/prometheus/client_golang/prometheus"
 
 // RequestsTotal is the inbound RPC request counter. Labels:
-//   kind = grpc|http
-//   op   = /pkg.svc.Method
-//   code = ok|error|<kratos reason>
+//
+//	kind = grpc|http
+//	op   = /pkg.svc.Method
+//	code = ok|error|<kratos reason>
 var RequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 	Name: "kris_requests_total",
 	Help: "Total number of inbound RPC requests handled by this service.",

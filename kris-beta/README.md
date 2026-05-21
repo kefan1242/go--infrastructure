@@ -1,11 +1,13 @@
 # kris-beta
 
 Example service demonstrating **optional middlewares** (`auth`, `ratelimit`)
-layered on top of the default chain. HTTP-only; no gRPC server.
+and an **HTTP filter** (`cors`) layered on top of the default chain.
+HTTP-only; no gRPC server.
 
-- business HTTP on `:8082` with `auth.Server` + `ratelimit.Server` appended
+- business HTTP on `:8082` with CORS (open) + `auth.Server` + `ratelimit.Server`
 - `GET /` is in the auth skip list (public)
 - `GET /whoami` requires a `Bearer demo-<subject>` token
+- preflight `OPTIONS` short-circuits with 204 + CORS headers, no auth gate
 - sidecar HTTP on `:8083`
 
 ## Run

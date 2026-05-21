@@ -4,6 +4,9 @@ run:
   timeout: 5m
   go: "1.25"
   tests: true
+  # build tags: enable so files behind `//go:build integration` get linted too
+  build-tags:
+    - integration
 
 linters:
   disable-all: true

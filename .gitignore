@@ -57,3 +57,7 @@ tmp/
 
 # ===== Air hot-reload =====
 .air.toml
+
+# ===== Coverage =====
+coverage.out
+coverage.html

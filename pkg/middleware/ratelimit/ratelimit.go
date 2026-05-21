@@ -141,6 +141,7 @@ func indexComma(s string) int {
 	}
 	return -1
 }
+
 func trim(s string) string {
 	for len(s) > 0 && (s[0] == ' ' || s[0] == '\t') {
 		s = s[1:]

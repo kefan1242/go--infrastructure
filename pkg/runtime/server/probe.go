@@ -75,7 +75,8 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 // gate it at the network layer (allowlist) in production.
 func registerPprof(mux interface {
 	HandleFunc(string, http.HandlerFunc)
-}) {
+},
+) {
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
 	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)

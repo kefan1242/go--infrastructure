@@ -51,6 +51,16 @@ test-all:
 test-integration:
 	@$(MAKE) -C pkg test-integration
 
+.PHONY: cover
+# coverage profile for pkg + per-package summary
+cover:
+	@$(MAKE) -C pkg cover
+
+.PHONY: bench
+# run benchmarks across pkg
+bench:
+	@$(MAKE) -C pkg bench
+
 .PHONY: gen-all
 # proto + wire + tidy across all kris-* services
 gen-all:

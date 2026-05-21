@@ -17,6 +17,7 @@ Module path: `github.com/kris/go-infrastructure/pkg`
 | `metric`            | shared Prometheus metric definitions                                     |
 | `middleware/access` | structured per-request access log                                        |
 | `middleware/auth`   | token-based auth with pluggable Validator and skip rules                 |
+| `middleware/cors`   | CORS filter for the HTTP business listener (origin allowlist + preflight) |
 | `middleware/logid`  | trace_id propagation header / metadata + OTel SpanContext bridge         |
 | `middleware/metric` | RED metrics into pkg/metric                                              |
 | `middleware/ratelimit` | in-process token-bucket rate limiter, per-key                         |

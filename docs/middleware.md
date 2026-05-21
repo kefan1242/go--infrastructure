@@ -115,6 +115,31 @@ reply, err := mw(myHandler)(ctx, nil)
 See `pkg/middleware/auth/auth_test.go` for a full example with skip-paths,
 generic errors, and kratos-error pass-through.
 
+## HTTP filters (CORS et al.)
+
+A `khttp.FilterFunc` (`func(http.Handler) http.Handler`) runs **before** the
+kratos middleware chain. Use this layer for raw-HTTP concerns that need
+direct access to `ResponseWriter` / `Request.Method` — CORS preflight,
+body-size limits, an edge request-id, etc.
+
+`pkg/runtime/server.HTTPConfig.Filters` threads them into `NewBizHTTPServer`:
+
+```go
+hs := pkgserver.NewBizHTTPServer(pkgserver.HTTPConfig{
+    Network: "tcp",
+    Addr:    ":8080",
+    Filters: []khttp.FilterFunc{
+        cors.New(
+            cors.WithAllowedOrigins("https://app.example.com"),
+            cors.WithAllowCredentials(true),
+        ),
+    },
+}, logger, registerFn, authMW, rlMW)
+```
+
+Filter order = list order = outer-to-inner. CORS must run before `auth`
+or `ratelimit` so preflight `OPTIONS` is not 401'd.
+
 ## Client-side middlewares
 
 `pkg/client` installs `recovery -> tracing.Client -> logid.Client` by default.

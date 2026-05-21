@@ -27,6 +27,7 @@ func (h fakeHeader) Keys() []string {
 	}
 	return out
 }
+
 func (h fakeHeader) Values(key string) []string {
 	if v, ok := h[key]; ok {
 		return []string{v}

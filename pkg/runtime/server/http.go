@@ -9,10 +9,14 @@ import (
 )
 
 // HTTPConfig is the cross-service HTTP server configuration.
+//
+// Filters run BEFORE the kratos middleware chain — use them for raw-HTTP
+// concerns like CORS, body-size limits, request id at the edge.
 type HTTPConfig struct {
 	Network string
 	Addr    string
 	Timeout time.Duration
+	Filters []khttp.FilterFunc
 }
 
 // HTTPRegistrar is the callback through which the caller registers HTTP handlers.
@@ -66,6 +70,9 @@ func baseHTTPOpts(cfg HTTPConfig) []khttp.ServerOption {
 	}
 	if cfg.Timeout > 0 {
 		opts = append(opts, khttp.Timeout(cfg.Timeout))
+	}
+	if len(cfg.Filters) > 0 {
+		opts = append(opts, khttp.Filter(cfg.Filters...))
 	}
 	return opts
 }

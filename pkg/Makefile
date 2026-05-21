@@ -17,4 +17,22 @@ vet:
 tidy:
 	go mod tidy
 
+.PHONY: cover
+# unit-test coverage profile + total line
+cover:
+	go test -race -count=1 -coverprofile=coverage.out ./...
+	@echo ""
+	@go tool cover -func=coverage.out | tail -1
+
+.PHONY: cover-html
+# open the coverage profile as an HTML report
+cover-html: cover
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "open: $(PWD)/coverage.html"
+
+.PHONY: bench
+# run benchmarks across the module
+bench:
+	go test -run='^$$' -bench=. -benchmem ./...
+
 .DEFAULT_GOAL := test

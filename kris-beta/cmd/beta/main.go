@@ -1,5 +1,6 @@
 // Example: kris-beta demonstrates plugging optional middlewares (auth +
-// ratelimit) on top of the default chain. HTTP-only; no gRPC server.
+// ratelimit) and an HTTP filter (cors) on top of the default chain.
+// HTTP-only; no gRPC server.
 package main
 
 import (
@@ -11,6 +12,7 @@ import (
 
 	pkglog "github.com/kris/go-infrastructure/pkg/log"
 	"github.com/kris/go-infrastructure/pkg/middleware/auth"
+	"github.com/kris/go-infrastructure/pkg/middleware/cors"
 	"github.com/kris/go-infrastructure/pkg/middleware/ratelimit"
 	pkgserver "github.com/kris/go-infrastructure/pkg/runtime/server"
 	"github.com/kris/go-infrastructure/pkg/version"
@@ -57,8 +59,17 @@ func main() {
 	)
 	rlMW := ratelimit.Server(ratelimit.WithRate(50, 100))
 
+	corsFilter := cors.New(
+		cors.WithAllowedOrigins("*"),
+		cors.WithAllowedMethods("GET", "POST", "OPTIONS"),
+	)
+
 	hs := pkgserver.NewBizHTTPServer(
-		pkgserver.HTTPConfig{Network: "tcp", Addr: httpAddr},
+		pkgserver.HTTPConfig{
+			Network: "tcp",
+			Addr:    httpAddr,
+			Filters: []khttp.FilterFunc{corsFilter},
+		},
 		logger,
 		func(s *khttp.Server) {
 			s.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
