@@ -61,6 +61,21 @@ cover:
 bench:
 	@$(MAKE) -C pkg bench
 
+.PHONY: ci-local
+# mirror the GitHub CI matrix locally before pushing: build + vet + test + lint + fmt-check
+ci-local:
+	@echo ">>> build"
+	@$(MAKE) build-all >/dev/null
+	@echo ">>> vet"
+	@$(MAKE) vet
+	@echo ">>> test"
+	@$(MAKE) test-all
+	@echo ">>> lint"
+	@$(MAKE) lint
+	@echo ">>> fmt-check"
+	@$(MAKE) fmt-check
+	@echo "ci-local: all green"
+
 .PHONY: gen-all
 # proto + wire + tidy across all kris-* services
 gen-all:
@@ -74,7 +89,7 @@ gen-all:
 .PHONY: lint
 # golangci-lint across every module in the workspace
 lint:
-	golangci-lint run ./pkg/... ./kris-*/...
+	golangci-lint run --build-tags=integration ./pkg/... $(SERVICES:%=./kris-%/...)
 
 .PHONY: fmt
 # gofumpt -extra + goimports across the whole repo (matches .golangci.yml rules)
@@ -86,10 +101,20 @@ fmt:
 # alias for fmt — auto-fix what golangci-lint would flag (gofumpt + goimports)
 lint-fix: fmt
 
+.PHONY: fmt-check
+# verify-only: list files that gofumpt or goimports would change, fail if any.
+# CI uses this to gate un-formatted PRs.
+fmt-check:
+	@out=$$(gofumpt -extra -l pkg/ kris-*/ 2>&1); \
+	if [ -n "$$out" ]; then echo "gofumpt -extra would change:" && echo "$$out" && exit 1; fi
+	@out=$$(goimports -l -local github.com/kris/go-infrastructure pkg/ kris-*/ 2>&1); \
+	if [ -n "$$out" ]; then echo "goimports would change:" && echo "$$out" && exit 1; fi
+	@echo "fmt-check: clean"
+
 .PHONY: vet
 # go vet across every module
 vet:
-	go vet ./pkg/... ./kris-*/...
+	go vet ./pkg/... $(SERVICES:%=./kris-%/...)
 
 # ---- Toolchain ----
 .PHONY: tools-install

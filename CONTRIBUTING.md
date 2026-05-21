@@ -24,6 +24,22 @@ otherwise fall back to the TCP peer addr.
 
 Do not amend pushed commits. New commits, always.
 
+## Changelog
+
+Append every user-visible change to `CHANGELOG.md` under `[Unreleased]`.
+Sections: `Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` /
+`Security`. Releases move the section to a dated header.
+
+Skip for pure internal refactors that don't affect API or behavior.
+
+## Pre-push verification
+
+```bash
+make ci-local   # build-all + vet + test-all + lint + fmt-check
+```
+
+This mirrors the GitHub CI matrix; green here ≈ green on PR.
+
 ## Code style
 
 - `make fmt` (gofumpt -extra + goimports with the local-prefix from `.golangci.yml`).

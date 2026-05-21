@@ -60,6 +60,40 @@ jobs:
         with:
           version: v1.62.2
           args: --build-tags=integration ./pkg/... ./kris-alpha/... ./kris-beta/... ./kris-gamma/...
+      - name: Install gofumpt + goimports
+        run: |
+          go install mvdan.cc/gofumpt@v0.7.0
+          go install golang.org/x/tools/cmd/goimports@latest
+      - name: fmt-check
+        run: make fmt-check
+
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache: true
+      - name: Scaffold a service via new-service.sh
+        run: bash scripts/new-service.sh smoke 50090 8190 8191
+      - name: Build the scaffolded service
+        run: |
+          cd kris-smoke
+          go build ./...
+      - name: Test the scaffolded service
+        run: |
+          cd kris-smoke
+          go test -race -count=1 ./...
+      - name: Verify identifiers were rewritten
+        run: |
+          test -d kris-smoke/helm-charts
+          grep -q "name: kris-smoke" kris-smoke/helm-charts/Chart.yaml
+          grep -q "EXPOSE 50090" kris-smoke/Dockerfile
+          grep -q "EXPOSE 8190" kris-smoke/Dockerfile
+          grep -q "EXPOSE 8191" kris-smoke/Dockerfile
+          grep -q '"kris-smoke"' kris-smoke/cmd/smoke/main.go
+          ! grep -r "kris-alpha" kris-smoke/ || (echo "leftover kris-alpha refs"; exit 1)
 
   integration:
     runs-on: ubuntu-latest
