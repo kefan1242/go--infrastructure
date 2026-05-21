@@ -7,6 +7,12 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- `pkg/page` — generic `Param{PageNo, PageSize}` + `Result[T]{Total, Pages, List}`.
+  `Param.Normalize / Offset / Limit` for SQL queries; `New / Empty / Map` for
+  building responses. No ORM coupling — works above any data layer.
+- `docs/data-layering.md` — when (and when not) to separate Entity / Domain /
+  API DTO in Go. Documents the one hard rule (sensitive fields never share a
+  struct with API output) and lets adopters pick deliberately.
 - **TLS support** in `pkg/runtime/server`. `HTTPConfig.TLSConfig` and
   `GRPCConfig.TLSConfig` accept `*tls.Config`. `TLSFromFiles(cert, key,
   clientCAFile)` loads cert+key, with optional client-CA bundle to enable

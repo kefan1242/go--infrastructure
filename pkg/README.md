@@ -23,6 +23,7 @@ Module path: `github.com/kris/go-infrastructure/pkg`
 | `middleware/ratelimit` | in-process token-bucket rate limiter, per-key                         |
 | `middleware/recovery` | recover panics + emit `kris_panics_total{op}` + stable PANIC error    |
 | `middleware/timeout` | per-request deadline with kratos `GatewayTimeout` on overrun              |
+| `page`              | generic `Param` + `Result[T]` for paginated endpoints (no ORM coupling)  |
 | `runtime/server`    | gRPC + business HTTP + sidecar HTTP (`/healthz`, `/readyz`, `/metrics`, pprof); TLS / mTLS via `TLSFromFiles`; graceful-shutdown `Drainer` |
 | `testutil`          | memory logger + fake transport for middleware tests                      |
 | `trace`             | OpenTelemetry tracer-provider initialization                             |
