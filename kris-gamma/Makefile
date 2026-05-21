@@ -1,10 +1,19 @@
-VERSION := $(shell git describe --tags --always 2>/dev/null || echo "dev")
-NAME    := gamma
+VERSION   := $(shell git describe --tags --always 2>/dev/null || echo "dev")
+COMMIT    := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+BUILDTIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+
+NAME         := gamma
+SERVICE_NAME := kris-$(NAME)
+
+LDFLAGS := -X main.Name=$(SERVICE_NAME) \
+           -X main.Version=$(VERSION) \
+           -X main.Commit=$(COMMIT) \
+           -X main.BuildTime=$(BUILDTIME)
 
 .PHONY: build
 build:
 	mkdir -p bin/
-	go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/$(NAME) ./cmd/$(NAME)
+	go build -ldflags "$(LDFLAGS)" -o ./bin/$(NAME) ./cmd/$(NAME)
 
 .PHONY: run
 run: build

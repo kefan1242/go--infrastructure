@@ -51,31 +51,51 @@ rsync -a \
 echo "==> Renaming cmd/alpha -> cmd/$NAME"
 mv "$TARGET/cmd/alpha" "$TARGET/cmd/$NAME"
 
-echo "==> Rewriting identifiers"
+echo "==> Rewriting identifiers (incl. helm chart name + tpl)"
+# NB: portable sed — avoid \b (BSD sed treats it literally).
+# Disambiguate bare "alpha" via explicit surrounding chars / line anchors.
 find "$TARGET" -type f \( \
     -name "*.go" -o -name "Makefile" -o -name "go.mod" \
-    -o -name "*.yaml" -o -name "*.md" -o -name "Dockerfile" \
+    -o -name "*.yaml" -o -name "*.yml" -o -name "*.md" \
+    -o -name "*.tpl" -o -name "*.txt" \
+    -o -name "Dockerfile" -o -name ".gitignore" \
   \) -print0 |
 while IFS= read -r -d '' f; do
   sed -i.bak \
     -e "s|github.com/kris/go-infrastructure/kris-alpha|github.com/kris/go-infrastructure/kris-$NAME|g" \
     -e "s|kris-alpha|kris-$NAME|g" \
+    -e "s|kris/alpha|kris/$NAME|g" \
     -e "s|\"alpha\"|\"$NAME\"|g" \
     -e "s|cmd/alpha|cmd/$NAME|g" \
     -e "s|./cmd/alpha|./cmd/$NAME|g" \
-    -e "s|/alpha\b|/$NAME|g" \
+    -e "s|/alpha\"|/$NAME\"|g" \
+    -e "s|/alpha$|/$NAME|g" \
+    -e "s|/alpha |/$NAME |g" \
+    -e "s|:= alpha$|:= $NAME|g" \
     "$f"
   rm -f "$f.bak"
 done
 
-echo "==> Patching ports in main.go"
-MAIN="$TARGET/cmd/$NAME/main.go"
-sed -i.bak \
-  -e "s|:50051|:$GRPC_PORT|g" \
-  -e "s|:8080|:$HTTP_PORT|g" \
-  -e "s|:8081|:$OTHER_PORT|g" \
-  "$MAIN"
-rm -f "$MAIN.bak"
+echo "==> Patching ports (main.go + Dockerfile + helm values)"
+patch_ports() {
+  local f="$1"
+  [ -f "$f" ] || return 0
+  sed -i.bak \
+    -e "s|:50051|:$GRPC_PORT|g" \
+    -e "s|:8080|:$HTTP_PORT|g" \
+    -e "s|:8081|:$OTHER_PORT|g" \
+    -e "s|EXPOSE 50051|EXPOSE $GRPC_PORT|g" \
+    -e "s|EXPOSE 8080|EXPOSE $HTTP_PORT|g" \
+    -e "s|EXPOSE 8081|EXPOSE $OTHER_PORT|g" \
+    -e "s|grpc: 50051|grpc: $GRPC_PORT|g" \
+    -e "s|http: 8080|http: $HTTP_PORT|g" \
+    -e "s|sidecar: 8081|sidecar: $OTHER_PORT|g" \
+    "$f"
+  rm -f "$f.bak"
+}
+patch_ports "$TARGET/cmd/$NAME/main.go"
+patch_ports "$TARGET/Dockerfile"
+patch_ports "$TARGET/helm-charts/values.yaml"
 
 echo "==> Adding to go.work"
 if ! grep -q "kris-$NAME" "$REPO_ROOT/go.work"; then

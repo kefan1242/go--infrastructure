@@ -7,17 +7,25 @@
 GOHOSTOS := $(shell go env GOHOSTOS)
 GOPATH   := $(shell go env GOPATH)
 VERSION  := $(shell git describe --tags --always 2>/dev/null || echo "dev")
+COMMIT   := $(shell git rev-parse HEAD 2>/dev/null || echo "unknown")
+BUILDTIME := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 
-NAME := alpha
+NAME         := alpha
+SERVICE_NAME := kris-$(NAME)
+
+LDFLAGS := -X main.Name=$(SERVICE_NAME) \
+           -X main.Version=$(VERSION) \
+           -X main.Commit=$(COMMIT) \
+           -X main.BuildTime=$(BUILDTIME)
 
 # Shared proto includes (cross-service)
 THIRD_PARTY := ../pkg/third_party
 
 .PHONY: build
-# build the service binary
+# build the service binary with Name/Version/Commit/BuildTime injected
 build:
 	mkdir -p bin/
-	go build -ldflags "-X main.Version=$(VERSION)" -o ./bin/$(NAME) ./cmd/$(NAME)
+	go build -ldflags "$(LDFLAGS)" -o ./bin/$(NAME) ./cmd/$(NAME)
 
 .PHONY: run
 # build + run with default flags

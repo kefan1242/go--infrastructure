@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kris/go-infrastructure/pkg/metric"
+
 	"github.com/go-kratos/kratos/v2/log"
+	"go.mongodb.org/mongo-driver/event"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -13,6 +16,7 @@ import (
 
 // MongoConfig is the cross-service MongoDB configuration.
 type MongoConfig struct {
+	Name           string        // metric label; default "default"
 	URI            string        // mongodb://user:pass@host:port/dbname
 	Database       string        // logical database name used by the service
 	ConnectTimeout time.Duration // default 10s
@@ -26,17 +30,28 @@ type MongoBundle struct {
 	Database *mongo.Database
 }
 
-// NewMongo returns a MongoBundle plus a cleanup function.
+// NewMongo returns a MongoBundle plus a cleanup function. The client is
+// configured with a PoolMonitor that increments pkg/metric.Mongo* counters
+// — no separate Collector to register.
 func NewMongo(cfg MongoConfig, logger log.Logger) (*MongoBundle, func(), error) {
 	if cfg.URI == "" {
 		return nil, func() {}, fmt.Errorf("mongo: empty URI")
 	}
 	helper := log.NewHelper(log.With(logger, "module", "pkg/data/mongo"))
 
+	name := cfg.Name
+	if name == "" {
+		name = "default"
+	}
+
 	connCtx, cancel := context.WithTimeout(context.Background(), defaultDuration(cfg.ConnectTimeout, 10*time.Second))
 	defer cancel()
 
-	client, err := mongo.Connect(connCtx, options.Client().ApplyURI(cfg.URI))
+	opts := options.Client().
+		ApplyURI(cfg.URI).
+		SetPoolMonitor(&event.PoolMonitor{Event: mongoEventHandler(name)})
+
+	client, err := mongo.Connect(connCtx, opts)
 	if err != nil {
 		return nil, func() {}, fmt.Errorf("mongo: connect: %w", err)
 	}
@@ -61,4 +76,33 @@ func NewMongo(cfg MongoConfig, logger log.Logger) (*MongoBundle, func(), error) 
 		helper.Info("mongo disconnected")
 	}
 	return bundle, cleanup, nil
+}
+
+// mongoEventHandler returns the PoolMonitor.Event hook bound to `name`.
+// Event-type strings come from go.mongodb.org/mongo-driver/event constants.
+func mongoEventHandler(name string) func(*event.PoolEvent) {
+	return func(e *event.PoolEvent) {
+		switch e.Type {
+		case event.ConnectionCreated:
+			metric.MongoConnectionsCreated.WithLabelValues(name).Inc()
+		case event.ConnectionClosed:
+			reason := e.Reason
+			if reason == "" {
+				reason = "unknown"
+			}
+			metric.MongoConnectionsClosed.WithLabelValues(name, reason).Inc()
+		case event.GetStarted:
+			metric.MongoCheckoutsStarted.WithLabelValues(name).Inc()
+		case event.GetFailed:
+			reason := e.Reason
+			if reason == "" {
+				reason = "unknown"
+			}
+			metric.MongoCheckoutsFailed.WithLabelValues(name, reason).Inc()
+		case event.GetSucceeded:
+			metric.MongoCheckoutsSucceeded.WithLabelValues(name).Inc()
+		case event.ConnectionReturned:
+			metric.MongoCheckins.WithLabelValues(name).Inc()
+		}
+	}
 }

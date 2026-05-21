@@ -105,9 +105,17 @@ registry; everything in `pkg/metric` is `MustRegister`'d at package init.
 | `kris_redis_pool_hits_total`          | Counter    | `name`                | "                                    |
 | `kris_redis_pool_misses_total`        | Counter    | `name`                | "                                    |
 | `kris_redis_pool_timeouts_total`      | Counter    | `name`                | "                                    |
+| `kris_mongo_pool_connections_created_total`  | Counter | `name`           | `pkg/data/mongo` PoolMonitor          |
+| `kris_mongo_pool_connections_closed_total`   | Counter | `name`, `reason` | "                                    |
+| `kris_mongo_pool_checkouts_started_total`    | Counter | `name`           | "                                    |
+| `kris_mongo_pool_checkouts_failed_total`     | Counter | `name`, `reason` | "                                    |
+| `kris_mongo_pool_checkouts_succeeded_total`  | Counter | `name`           | "                                    |
+| `kris_mongo_pool_checkins_total`             | Counter | `name`           | "                                    |
 
-Pool collectors are registered by `NewMySQL` / `NewRedis` automatically and
-unregistered in the cleanup function — no manual wiring needed.
+SQL/Redis collectors are registered by `NewMySQL` / `NewRedis` automatically
+and unregistered in the cleanup function. Mongo is event-driven: `NewMongo`
+attaches a `PoolMonitor` so counters increment as the driver fires events —
+no Collector to register.
 
 ### Latency histogram buckets
 
