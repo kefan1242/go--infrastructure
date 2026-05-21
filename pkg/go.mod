@@ -3,7 +3,7 @@ module github.com/kris/go-infrastructure/pkg
 go 1.25.0
 
 require (
-	github.com/go-kratos/kratos/v2 v2.8.0
+	github.com/go-kratos/kratos/v2 v2.9.2
 	github.com/go-sql-driver/mysql v1.10.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
