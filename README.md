@@ -36,6 +36,22 @@ See `docs/` for the deep dive: [getting-started](docs/getting-started.md),
 [architecture](docs/architecture.md), [observability](docs/observability.md),
 [middleware](docs/middleware.md).
 
+## What's inside
+
+| Layer            | Modules / files                                                                                                                                                            |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| transport        | `pkg/runtime/server` (gRPC + biz HTTP + sidecar), `pkg/client` (gRPC + HTTP factories)                                                                                     |
+| middleware       | `pkg/middleware/{recovery, access, auth, cors, logid, metric, ratelimit, timeout}` + default chain                                                                         |
+| data             | `pkg/data` MySQL / Redis / Mongo factories with Prometheus pool collectors                                                                                                 |
+| observability    | `pkg/trace` (OTel), `pkg/log` (text / JSON / `slog.Handler` adapter), `pkg/metric` (RED + pools + panics)                                                                  |
+| config           | `pkg/config` layered `.env` + env-var loader                                                                                                                               |
+| test helpers     | `pkg/testutil` (memory logger, fake transport)                                                                                                                             |
+| service          | `pkg/version` build-info handler; `BizHTTPServer.HandleFunc` (chain-aware) + `S.HandleFunc` (raw)                                                                          |
+| examples         | `kris-alpha` (default chain), `kris-beta` (auth + ratelimit + CORS), `kris-gamma` (downstream client + timeout + readiness probe)                                          |
+| dev              | `docker-compose.dev.yml` (mysql/redis/mongo/prometheus/grafana), `make demo`, `make dev-deps-up`                                                                           |
+| ci / quality     | matrix CI, golangci-lint v1.62.2, `make cover-gate` (≥75%), goleak across 14 test packages, scaffold smoke job                                                             |
+| scaffolding      | `scripts/new-service.sh`, `kris-alpha/helm-charts/`, distroless Dockerfile template                                                                                        |
+
 ## Using `pkg` in your own project
 
 The infrastructure module lives at `github.com/kris/go-infrastructure/pkg`.

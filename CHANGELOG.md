@@ -7,6 +7,11 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- `make demo` / `make demo-stop` boot all three kris-* services with
+  non-colliding default ports (28xxx) and print a curl cheat-sheet.
+- `BenchmarkDefaultChain_PassesThroughNoopHandler` pins per-request
+  overhead of the default middleware chain (~1.3µs / 2.2KB / 35 allocs
+  baseline on Apple M5 Pro).
 - `pkg/middleware/recovery` wraps kratos's bare recovery to emit
   `kris_panics_total{op}` and return a stable kratos InternalServer /
   PANIC. Now the outer of the default chain.
