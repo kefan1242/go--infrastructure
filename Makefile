@@ -56,6 +56,11 @@ test-integration:
 cover:
 	@$(MAKE) -C pkg cover
 
+.PHONY: cover-gate
+# fail if total pkg coverage drops below COVER_MIN (default 75.0)
+cover-gate:
+	@$(MAKE) -C pkg cover-gate
+
 .PHONY: bench
 # run benchmarks across pkg
 bench:

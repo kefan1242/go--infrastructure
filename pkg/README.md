@@ -13,7 +13,7 @@ Module path: `github.com/kris/go-infrastructure/pkg`
 | `client`            | gRPC client factory with default middlewares + fail-fast Dial            |
 | `config`            | layered `.env` / env-var loader with project-root auto-discovery         |
 | `data`              | `mysql` / `redis` / `mongo` connection factories (ping at startup)       |
-| `log`               | seeded kratos logger                                                     |
+| `log`               | seeded kratos logger (text + JSON) + slog.Handler adapter                |
 | `metric`            | shared Prometheus metric definitions                                     |
 | `middleware/access` | structured per-request access log                                        |
 | `middleware/auth`   | token-based auth with pluggable Validator and skip rules                 |

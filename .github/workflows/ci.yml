@@ -37,15 +37,19 @@ jobs:
 
       - name: Test + coverage
         run: |
-          go test -race -count=1 -coverprofile=coverage.out ./pkg/...
-          go tool cover -func=coverage.out | tail -1
+          go test -race -count=1 -coverprofile=pkg/coverage.out ./pkg/...
+          go tool cover -func=pkg/coverage.out | tail -1
+
+      - name: Coverage gate (>= COVER_MIN, default 75%)
+        if: matrix.go == '1.25.x'
+        run: make cover-gate
 
       - name: Upload coverage artifact
         if: matrix.go == '1.25.x'
         uses: actions/upload-artifact@v4
         with:
           name: coverage
-          path: coverage.out
+          path: pkg/coverage.out
 
   lint:
     runs-on: ubuntu-latest

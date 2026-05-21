@@ -7,6 +7,11 @@ the repo uses semver once it cuts a `v0.1.0`.
 ## [Unreleased]
 
 ### Added
+- `pkg/log.SlogHandler(logger)` — slog.Handler adapter so libraries that
+  accept the stdlib `log/slog` API can route through the kratos pipeline.
+  Maps slog DEBUG/INFO/WARN/ERROR to kratos levels; honors WithAttrs +
+  WithGroup key prefixing.
+- `make cover-gate` (default 75.0%) — CI fails if total pkg coverage drops.
 - `pkg/client/http` HTTP client factory with default recovery/tracing/logid chain.
 - `pkg/middleware/cors` CORS filter (origin allowlist, preflight short-circuit, credentials echo).
 - `pkg/middleware/timeout` per-request deadline (kratos `GatewayTimeout` on overrun).
