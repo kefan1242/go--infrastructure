@@ -95,6 +95,28 @@ func TestTraceIDFromContext_PopulatedWithSpan(t *testing.T) {
 	_ = oteltrace.SpanFromContext(ctx) // ensure imported pkg compiles
 }
 
+func TestInit_OTLPEndpointBuildsExporter(t *testing.T) {
+	// The exporter is built lazily; we only verify Init returns without
+	// blocking on the unreachable collector (otlphttp doesn't ping on dial).
+	shutdown, err := trace.Init(trace.Config{
+		ServiceName:   "kris-trace-otlp",
+		Endpoint:      "127.0.0.1:14318", // intentionally unused port
+		Insecure:      true,
+		SampleRatio:   0.5,
+		ExportTimeout: 250 * time.Millisecond,
+	})
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err := shutdown(ctx); err != nil {
+		// shutdown over an unreachable collector returns an error from the
+		// batch processor flush; we only care that it doesn't hang.
+		t.Logf("shutdown returned (expected over unreachable endpoint): %v", err)
+	}
+}
+
 func TestInit_PropagatorIsTraceContextBaggage(t *testing.T) {
 	shutdown, err := trace.Init(trace.Config{
 		ServiceName: "kris-trace-test-prop",

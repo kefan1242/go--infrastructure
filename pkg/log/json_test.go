@@ -11,6 +11,19 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 )
 
+func TestNewJSON_StdoutVariantReturnsNonNil(t *testing.T) {
+	// NewJSON writes to os.Stdout; just verify construction.
+	if l := pkglog.NewJSON("x", "v1", "id"); l == nil {
+		t.Fatal("NewJSON returned nil")
+	}
+}
+
+func TestNew_StdoutVariantReturnsNonNil(t *testing.T) {
+	if l := pkglog.New("x", "v1", "id"); l == nil {
+		t.Fatal("New returned nil")
+	}
+}
+
 func TestNewJSON_EmitsValidJSON(t *testing.T) {
 	var buf bytes.Buffer
 	logger := pkglog.NewJSONTo(&buf, "kris-x", "v0.1", "host-1")

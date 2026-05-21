@@ -26,6 +26,12 @@ the repo uses semver once it cuts a `v0.1.0`.
   `--build-tags=integration`), integration job (mysql/redis/mongo service
   containers), scaffold smoke job, fmt-check.
 
+- `.github/dependabot.yml` — weekly grouped updates for pkg + each kris-*
+  Go module, github-actions, and docker.
+- `.github/PULL_REQUEST_TEMPLATE.md` + ISSUE_TEMPLATE bug / feature stubs.
+- `make fmt-check` (verify-only) + `make ci-local` (full mirror of CI).
+- Scaffolder smoke job in CI runs `scripts/new-service.sh` end-to-end.
+
 ### Fixed
 - `scripts/new-service.sh` portable-sed compatibility (BSD/macOS): drop
   `\b`, use explicit anchors so Dockerfile EXPOSE / Makefile `NAME :=` /
